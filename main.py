@@ -3,6 +3,7 @@ import sys
 import traceback
 
 from sam import Sam
+import config
 
 def main():
     try:
