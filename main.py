@@ -2,10 +2,12 @@
 import sys
 import traceback
 
+from sam import Sam
 
 def main():
     try:
-
+        sam = Sam()
+        print(sam._available_hardware)
         return 0
     except SystemExit:
         raise
