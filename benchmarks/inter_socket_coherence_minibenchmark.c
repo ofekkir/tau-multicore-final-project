@@ -46,8 +46,8 @@ int main()
     CPU_ZERO(&ts1.mask);
     CPU_ZERO(&ts2.mask);
 
-    CPU_SET(0, &ts1.mask);
-    CPU_SET(0, &ts2.mask);
+    CPU_SET(10, &ts1.mask);
+    CPU_SET(20, &ts2.mask);
 
     pthread_create(&t1, NULL, myThreadFun, &ts1);
     pthread_create(&t2, NULL, myThreadFun, &ts2);
