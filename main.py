@@ -8,7 +8,7 @@ import config
 def main():
     try:
         sam = Sam()
-        print(sam._available_hardware)
+        sam._collect_performance_counters()
         return 0
     except SystemExit:
         raise
