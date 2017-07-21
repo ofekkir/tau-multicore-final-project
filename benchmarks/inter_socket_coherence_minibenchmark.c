@@ -24,7 +24,7 @@ void *myThreadFun(void *vargp)
             local_var++;
         }
         shared_var++;
-        printf("shared_var %d \n", shared_var);
+//        printf("shared_var %d \n", shared_var);
     }
     return NULL;
 }
