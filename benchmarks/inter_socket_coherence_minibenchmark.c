@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sched.h>
+#include <string.h>
 
 typedef struct {
     int local_cycles;
@@ -31,7 +32,6 @@ void *myThreadFun(void *vargp)
         }
         shared_var++;
 //      printf("shared_var %d \n", shared_var);
-
     }
     return NULL;
 }
@@ -42,6 +42,7 @@ int main()
     thread_struct ts1, ts2;
     ts1.local_cycles = 1000;
     ts2.local_cycles = 1000;
+
     CPU_ZERO(&ts1.mask);
     CPU_ZERO(&ts2.mask);
 
@@ -51,14 +52,8 @@ int main()
     pthread_create(&t1, NULL, myThreadFun, &ts1);
     pthread_create(&t2, NULL, myThreadFun, &ts2);
 
-    pthread_join(t1, NULL);
-    pthread_join(t2, NULL);
-
-    exit(0);
-}
-
-    pthread_create(&t1, NULL, myThreadFun, &ts1);
-    pthread_create(&t2, NULL, myThreadFun, &ts2);
+    pthread_setname_np(t1, "coherence_1");
+    pthread_setname_np(t2, "coherence_2");
 
     pthread_join(t1, NULL);
     pthread_join(t2, NULL);
