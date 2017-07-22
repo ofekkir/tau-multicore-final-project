@@ -5,7 +5,7 @@ import re
 
 import config
 
-MEASUREMENTS_FIELDS = 'cpu,inter_socket_coherence,intra_socket_coherence,remote_dram,memory_bandwidth'
+MEASUREMENTS_FIELDS = 'cpu,inter_socket_coherence,intra_socket_coherence,remote_dram,memory_bandwidth,instructions,cycles'
 Measurement = namedtuple('Measurements', MEASUREMENTS_FIELDS)
 
 class Sam(object):
@@ -53,11 +53,18 @@ class Sam(object):
 
             memory_bandwidth = counters[cpu]['LLC-misses']
 
+            instructions = counters[cpu]['instructions']
+            cycles = counters[cpu]['cycles']
+
+
+
             measurements.append(Measurement(cpu=cpu,
                                             inter_socket_coherence=inter_socket_coherence,
                                             intra_socket_coherence=intra_socket_coherence,
                                             remote_dram=remote_dram,
-                                            memory_bandwidth=memory_bandwidth))
+                                            memory_bandwidth=memory_bandwidth,
+                                            instructions=instructions,
+                                            cycles=cycles))
 
         return measurements
 
