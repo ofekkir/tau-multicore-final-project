@@ -9,9 +9,6 @@ from classification import Classification
 MEASUREMENTS_FIELDS = 'cpu,inter_socket_coherence,intra_socket_coherence,remote_dram,memory_bandwidth,instructions,cycles'
 Measurement = namedtuple('Measurement', MEASUREMENTS_FIELDS)
 
-CORE_FIELDS = 'core,id'
-Core = namedtuple('Core', CORE_FIELDS)
-
 
 class Sam(object):
     def __init__(self):
@@ -48,7 +45,7 @@ class Sam(object):
 
         return classifications
     def _init_available_hardware(self):
-        _CPU_FIELDS = 'CPU,Core,Socket'
+        _CPU_FIELDS = 'CPU,Socket'
         CPU = namedtuple('CPU', _CPU_FIELDS)
 
         lscpu_commnad = 'lscpu -p={}'.format(_CPU_FIELDS)
@@ -63,9 +60,9 @@ class Sam(object):
             cpu = CPU(*cpu_params_int_format)
 
             if cpu.Socket in self._available_hardware:
-                self._available_hardware[cpu.Socket].append(Core(core=cpu.Core, id=cpu.CPU))
+                self._available_hardware[cpu.Socket].append(cpu.CPU)
             else:
-                self._available_hardware[cpu.Socket] = [Core(core=cpu.Core, id=cpu.CPU)]
+                self._available_hardware[cpu.Socket] = [cpu.CPU]
 
     def _compute_measurements(self, counters):
         measurements = []
@@ -121,7 +118,7 @@ class Sam(object):
         # Init default counters
         for socket in self._available_hardware:
             for cpu in self._available_hardware[socket]:
-                counters[cpu.id] = {}
+                counters[cpu] = {}
 
         parser = csv.DictReader(stderr.decode('utf-8').splitlines(),
                                 fieldnames=['cpu_name', 'value', 'blank', 'event_name', 'timestamp', 'scale'])
