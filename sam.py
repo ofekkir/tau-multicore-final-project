@@ -6,7 +6,7 @@ import re
 import config
 
 MEASUREMENTS_FIELDS = 'cpu,inter_socket_coherence,intra_socket_coherence,remote_dram,memory_bandwidth,instructions,cycles'
-Measurement = namedtuple('Measurements', MEASUREMENTS_FIELDS)
+Measurement = namedtuple('Measurement', MEASUREMENTS_FIELDS)
 
 CORE_FIELDS = 'core,id'
 Core = namedtuple('Core', CORE_FIELDS)
@@ -104,7 +104,8 @@ class Sam(object):
             for cpu in self._available_hardware[socket]:
                 counters[cpu.id] = {}
 
-        parser = csv.DictReader(stderr.decode('utf-8').splitlines(), fieldnames=['cpu_name', 'value', 'blank', 'event_name', 'timestamp', 'scale'])
+        parser = csv.DictReader(stderr.decode('utf-8').splitlines(),
+                                fieldnames=['cpu_name', 'value', 'blank', 'event_name', 'timestamp', 'scale'])
 
         for row in parser:
             counter_name = row['event_name']
