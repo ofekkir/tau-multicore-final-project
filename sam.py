@@ -5,6 +5,9 @@ import re
 
 import config
 
+MEASUREMENTS_FIELDS = 'cpu,inter_socket_coherence,intra_socket_coherence,remote_dram,memory_bandwidth'
+Measurement = namedtuple('Measurements', MEASUREMENTS_FIELDS)
+
 class Sam(object):
     def __init__(self):
         super(Sam, self).__init__()
@@ -14,20 +17,11 @@ class Sam(object):
     def run(selfs):
         while True:
             counters = selfs._collect_performance_counters()
+            measurments = selfs._compute_measurements(counters)
 
-            for cpu in counters:
-                counters[cpu]['inter-socket-coherence'] = counters[cpu]['mem_load_uops_l3_miss_retired_remote_hitm'] + \
-                                                counters[cpu]['mem_load_uops_l3_miss_retired_remote_fwd']
+            import pprint
+            pprint.pprint(measurments)
 
-                counters[cpu]['intra-socket-coherence'] = counters[cpu]['mem_load_uops_retired_l2_miss'] - \
-                                                          (counters[cpu]['mem_load_uops_retired_l3_miss'] +
-                                                           counters[cpu]['mem_load_uops_retired_l3_hit'])
-
-
-                if cpu in [10,11]:
-                    print('{}. {}'.format(cpu, counters[cpu]))
-
-            # TODO: remove
             return
 
     def _init_available_hardware(self):
@@ -44,6 +38,28 @@ class Sam(object):
             cpu_params_str_format = line.split(b',')
             cpu_params_int_format = map(int, cpu_params_str_format)
             self._available_hardware.append(CPU(*cpu_params_int_format))
+
+    def _compute_measurements(self, counters):
+        measurements = []
+        for cpu in counters:
+            inter_socket_coherence = counters[cpu]['mem_load_uops_l3_miss_retired_remote_hitm'] + \
+                                            counters[cpu]['mem_load_uops_l3_miss_retired_remote_fwd']
+
+            intra_socket_coherence = counters[cpu]['mem_load_uops_retired_l2_miss'] - \
+                                                      (counters[cpu]['mem_load_uops_retired_l3_miss'] +
+                                                       counters[cpu]['mem_load_uops_retired_l3_hit'])
+
+            remote_dram = counters[cpu]['mem_load_uops_l3_miss_retired_remote_dram']
+
+            memory_bandwidth = counters[cpu]['LLC-misses']
+
+            measurements.append(Measurement(cpu=cpu,
+                                            inter_socket_coherence=inter_socket_coherence,
+                                            intra_socket_coherence=intra_socket_coherence,
+                                            remote_dram=remote_dram,
+                                            memory_bandwidth=memory_bandwidth))
+
+        return measurements
 
     def _collect_performance_counters(self):
         _PERF_COMMAND_TEMPLATE = './pmu-tools-r106/ocperf.py stat {events} {all_cores} {no_aggregate} {create_csv} ' \
