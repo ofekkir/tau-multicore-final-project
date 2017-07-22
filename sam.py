@@ -8,10 +8,14 @@ import config
 MEASUREMENTS_FIELDS = 'cpu,inter_socket_coherence,intra_socket_coherence,remote_dram,memory_bandwidth,instructions,cycles'
 Measurement = namedtuple('Measurements', MEASUREMENTS_FIELDS)
 
+CORE_FIELDS = 'core,id'
+Core = namedtuple('Core', CORE_FIELDS)
+
+
 class Sam(object):
     def __init__(self):
         super(Sam, self).__init__()
-        self._available_hardware = []
+        self._available_hardware = {}
         self._init_available_hardware()
 
     def run(selfs):
@@ -30,14 +34,19 @@ class Sam(object):
 
         lscpu_commnad = 'lscpu -p={}'.format(_CPU_FIELDS)
         stdout = subprocess.check_output(lscpu_commnad.split())
-        for line in stdout.splitlines():
-            # Stripping comments from stdout.
-            if line.startswith(b'#'):
-                continue
 
-            cpu_params_str_format = line.split(b',')
+        # Stripping comments from stdout.
+        cpus = [line for line in stdout.splitlines() if not line.startswith(b'#')]
+
+        for cpu_line in cpus:
+            cpu_params_str_format = cpu_line.split(b',')
             cpu_params_int_format = map(int, cpu_params_str_format)
-            self._available_hardware.append(CPU(*cpu_params_int_format))
+            cpu = CPU(*cpu_params_int_format)
+
+            if cpu.Socket in self._available_hardware:
+                self._available_hardware[cpu.Socket].append(Core(core=cpu.Core, id=cpu.CPU))
+            else:
+                self._available_hardware[cpu.Socket] = [Core(core=cpu.Core, id=cpu.CPU)]
 
     def _compute_measurements(self, counters):
         measurements = []
@@ -91,8 +100,9 @@ class Sam(object):
         counters = {}
 
         # Init default counters
-        for cpu in range(len(self._available_hardware)):
-            counters[cpu] = {}
+        for socket in self._available_hardware:
+            for cpu in self._available_hardware[socket]:
+                counters[cpu.id] = {}
 
         parser = csv.DictReader(stderr.decode('utf-8').splitlines(), fieldnames=['cpu_name', 'value', 'blank', 'event_name', 'timestamp', 'scale'])
 
