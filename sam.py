@@ -4,6 +4,7 @@ import csv
 import re
 
 import config
+from classification import Classification
 
 MEASUREMENTS_FIELDS = 'cpu,inter_socket_coherence,intra_socket_coherence,remote_dram,memory_bandwidth,instructions,cycles'
 Measurement = namedtuple('Measurement', MEASUREMENTS_FIELDS)
@@ -18,16 +19,34 @@ class Sam(object):
         self._available_hardware = {}
         self._init_available_hardware()
 
-    def run(selfs):
+    def run(self):
         while True:
-            counters = selfs._collect_performance_counters()
-            measurments = selfs._compute_measurements(counters)
-
-            import pprint
-            pprint.pprint(measurments)
+            counters = self._collect_performance_counters()
+            measurements = self._compute_measurements(counters)
+            classified_measurements = self._classify_measurements(measurements)
 
             return
 
+    def _classify_measurements(self, measurements):
+        classifications = {}
+        for measurement in measurements:
+            is_inter = measurement.inter_socket_coherence > config.INTER_SOCKET_COHERENCE_THRESHOLD_PER_TASK
+            is_intra = not is_inter and \
+                       measurement.intra_socket_coherence > config.INTRA_SOCKET_COHERENCE_THRESHOLD_PER_TASK
+            is_remote_dram = measurement.remote_dram > config.REMOTE_MEMORY_ACCESS_THRESHOLD_PER_TASK
+            is_memory_bound = measurement.memory_bandwidth > config.MEMORY_UTILIZATION_THRESHOLD_PER_TASK
+            is_idle = measurement.cycles == 0
+            is_cpu_bound = not (is_inter or is_intra or is_remote_dram or is_memory_bound or is_idle)
+
+
+            classifications[measurement.cpu] = Classification(is_inter=is_inter,
+                                                              is_intra=is_intra,
+                                                              is_remote_dram=is_remote_dram,
+                                                              is_memory_bound=is_memory_bound,
+                                                              is_idle=is_idle,
+                                                              is_cpu_bound=is_cpu_bound)
+
+        return classifications
     def _init_available_hardware(self):
         _CPU_FIELDS = 'CPU,Core,Socket'
         CPU = namedtuple('CPU', _CPU_FIELDS)
