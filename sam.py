@@ -26,24 +26,47 @@ class Sam(object):
 
     def _classify_measurements(self, measurements):
         classifications = {}
-        for measurement in measurements:
-            is_inter = measurement.inter_socket_coherence > config.INTER_SOCKET_COHERENCE_THRESHOLD_PER_TASK
-            is_intra = not is_inter and \
-                       measurement.intra_socket_coherence > config.INTRA_SOCKET_COHERENCE_THRESHOLD_PER_TASK
-            is_remote_dram = measurement.remote_dram > config.REMOTE_MEMORY_ACCESS_THRESHOLD_PER_TASK
-            is_memory_bound = measurement.memory_bandwidth > config.MEMORY_UTILIZATION_THRESHOLD_PER_TASK
-            is_idle = measurement.cycles == 0
-            is_cpu_bound = not (is_inter or is_intra or is_remote_dram or is_memory_bound or is_idle)
+
+        for socket in self._available_hardware:
+
+            classifications[socket] = Classification()
+
+            for cpu in self._available_hardware[socket]:
+
+                measurement = measurements[cpu]
+
+                is_cpu_bound = True
+                is_inter = measurement.inter_socket_coherence > config.INTER_SOCKET_COHERENCE_THRESHOLD_PER_TASK
+                if is_inter:
+                    classifications[socket].is_inter.append(cpu)
+                    is_cpu_bound = False
+
+                if not is_inter and \
+                                measurement.intra_socket_coherence > config.INTRA_SOCKET_COHERENCE_THRESHOLD_PER_TASK:
+                    classifications[socket].is_intra.append(cpu)
+                    is_cpu_bound = False
 
 
-            classifications[measurement.cpu] = Classification(is_inter=is_inter,
-                                                              is_intra=is_intra,
-                                                              is_remote_dram=is_remote_dram,
-                                                              is_memory_bound=is_memory_bound,
-                                                              is_idle=is_idle,
-                                                              is_cpu_bound=is_cpu_bound)
+                if measurement.remote_dram > config.REMOTE_MEMORY_ACCESS_THRESHOLD_PER_TASK:
+                    classifications[socket].is_remote_dram.append(cpu)
+                    is_cpu_bound = False
+
+                if measurement.memory_bandwidth > config.MEMORY_UTILIZATION_THRESHOLD_PER_TASK:
+                    classifications[socket].is_memory_bound.append(cpu)
+                    is_cpu_bound = False
+
+                if measurement.cycles == 0:
+                    classifications[socket].is_idle.append(cpu)
+                    is_cpu_bound = False
+
+                if is_cpu_bound:
+                    classifications[socket].is_cpu_bound.append(cpu)
 
         return classifications
+
+
+
+
     def _init_available_hardware(self):
         _CPU_FIELDS = 'CPU,Socket'
         CPU = namedtuple('CPU', _CPU_FIELDS)
