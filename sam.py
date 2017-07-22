@@ -4,40 +4,91 @@ import csv
 import re
 
 import config
+from classification import Classification
+from remapper import Remapper
 
 MEASUREMENTS_FIELDS = 'cpu,inter_socket_coherence,intra_socket_coherence,remote_dram,memory_bandwidth,instructions,cycles'
-Measurement = namedtuple('Measurements', MEASUREMENTS_FIELDS)
+Measurement = namedtuple('Measurement', MEASUREMENTS_FIELDS)
+
 
 class Sam(object):
     def __init__(self):
         super(Sam, self).__init__()
-        self._available_hardware = []
+        self._available_hardware = {}
         self._init_available_hardware()
 
-    def run(selfs):
+    def run(self):
         while True:
-            counters = selfs._collect_performance_counters()
-            measurments = selfs._compute_measurements(counters)
+            counters = self._collect_performance_counters()
+            measurements = self._compute_measurements(counters)
+            classified_measurements = self._classify_measurements(measurements)
 
-            import pprint
-            pprint.pprint(measurments)
+            Remapper(self._available_hardware, classified_measurements).remap_processes()
 
             return
 
+    def _classify_measurements(self, measurements):
+        classifications = {}
+
+        for socket in self._available_hardware:
+
+            classifications[socket] = Classification()
+
+            for cpu in self._available_hardware[socket]:
+
+                measurement = measurements[cpu]
+
+                is_cpu_bound = True
+                is_inter = measurement.inter_socket_coherence > config.INTER_SOCKET_COHERENCE_THRESHOLD_PER_TASK
+                if is_inter:
+                    classifications[socket].is_inter.append(cpu)
+                    is_cpu_bound = False
+
+                if not is_inter and \
+                                measurement.intra_socket_coherence > config.INTRA_SOCKET_COHERENCE_THRESHOLD_PER_TASK:
+                    classifications[socket].is_intra.append(cpu)
+                    is_cpu_bound = False
+
+
+                if measurement.remote_dram > config.REMOTE_MEMORY_ACCESS_THRESHOLD_PER_TASK:
+                    classifications[socket].is_remote_dram.append(cpu)
+                    is_cpu_bound = False
+
+                if measurement.memory_bandwidth > config.MEMORY_UTILIZATION_THRESHOLD_PER_TASK:
+                    classifications[socket].is_memory_bound.append(cpu)
+                    is_cpu_bound = False
+
+                if measurement.cycles == 0:
+                    classifications[socket].is_idle.append(cpu)
+                    is_cpu_bound = False
+
+                if is_cpu_bound:
+                    classifications[socket].is_cpu_bound.append(cpu)
+
+        return classifications
+
+
+
+
     def _init_available_hardware(self):
-        _CPU_FIELDS = 'CPU,Core,Socket'
+        _CPU_FIELDS = 'CPU,Socket'
         CPU = namedtuple('CPU', _CPU_FIELDS)
 
         lscpu_commnad = 'lscpu -p={}'.format(_CPU_FIELDS)
         stdout = subprocess.check_output(lscpu_commnad.split())
-        for line in stdout.splitlines():
-            # Stripping comments from stdout.
-            if line.startswith(b'#'):
-                continue
 
-            cpu_params_str_format = line.split(b',')
+        # Stripping comments from stdout.
+        cpus = [line for line in stdout.splitlines() if not line.startswith(b'#')]
+
+        for cpu_line in cpus:
+            cpu_params_str_format = cpu_line.split(b',')
             cpu_params_int_format = map(int, cpu_params_str_format)
-            self._available_hardware.append(CPU(*cpu_params_int_format))
+            cpu = CPU(*cpu_params_int_format)
+
+            if cpu.Socket in self._available_hardware:
+                self._available_hardware[cpu.Socket].append(cpu.CPU)
+            else:
+                self._available_hardware[cpu.Socket] = [cpu.CPU]
 
     def _compute_measurements(self, counters):
         measurements = []
@@ -91,10 +142,12 @@ class Sam(object):
         counters = {}
 
         # Init default counters
-        for cpu in range(len(self._available_hardware)):
-            counters[cpu] = {}
+        for socket in self._available_hardware:
+            for cpu in self._available_hardware[socket]:
+                counters[cpu] = {}
 
-        parser = csv.DictReader(stderr.decode('utf-8').splitlines(), fieldnames=['cpu_name', 'value', 'blank', 'event_name', 'timestamp', 'scale'])
+        parser = csv.DictReader(stderr.decode('utf-8').splitlines(),
+                                fieldnames=['cpu_name', 'value', 'blank', 'event_name', 'timestamp', 'scale'])
 
         for row in parser:
             counter_name = row['event_name']
