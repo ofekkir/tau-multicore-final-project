@@ -5,6 +5,7 @@ import re
 
 import config
 from classification import Classification
+from remapper import Remapper
 
 MEASUREMENTS_FIELDS = 'cpu,inter_socket_coherence,intra_socket_coherence,remote_dram,memory_bandwidth,instructions,cycles'
 Measurement = namedtuple('Measurement', MEASUREMENTS_FIELDS)
@@ -21,6 +22,8 @@ class Sam(object):
             counters = self._collect_performance_counters()
             measurements = self._compute_measurements(counters)
             classified_measurements = self._classify_measurements(measurements)
+
+            Remapper(self._available_hardware, classified_measurements).remap_processes()
 
             return
 
