@@ -1,0 +1,7 @@
+ Measurements(cpu=3, inter_socket_coherence=16, intra_socket_coherence=1044, remote_dram=0, memory_bandwidth=35, instructions=182663, cycles=2246822),
+ Measurements(cpu=5, inter_socket_coherence=16, intra_socket_coherence=874, remote_dram=0, memory_bandwidth=22, instructions=184184, cycles=2118574),
+ Measurements(cpu=7, inter_socket_coherence=60, intra_socket_coherence=885, remote_dram=0, memory_bandwidth=66, instructions=183720, cycles=2157654),
+ Measurements(cpu=9, inter_socket_coherence=18, intra_socket_coherence=1119, remote_dram=0, memory_bandwidth=20, instructions=182668, cycles=2162470),
+ Measurements(cpu=11, inter_socket_coherence=39, intra_socket_coherence=617, remote_dram=2, memory_bandwidth=151, instructions=354202, cycles=2357322),
+ Measurements(cpu=13, inter_socket_coherence=72, intra_socket_coherence=292, remote_dram=2, memory_bandwidth=234, instructions=376863, cycles=1637451),
+ Measurements(cpu=15, inter_socket_coherence=75, intra_socket_coherence=4280, remote_dram=0, memory_bandwidth=837, instructions=415301, cycles=2637796),
