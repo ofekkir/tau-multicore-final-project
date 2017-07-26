@@ -3,7 +3,7 @@ import random
 import os
 import subprocess
 
-allowed = [10,11]
+import config
 
 class Remapper(object):
     def __init__(self, hw, classifications):
@@ -33,7 +33,9 @@ class Remapper(object):
                 continue
 
             # TODO: remove!
-            if process.cpu_affinity()[0] not in allowed:
+                # TODO: remove!
+                if process.uids().real not in config.OPTIMIZE_ONLY_PROCESSES_OF_USER:
+                    continue
                 continue
             # In the first time sam encounters a process, the process is not pinned yet, thus we use some random cpu as
             # it's cpu.
@@ -53,10 +55,7 @@ class Remapper(object):
 
         src_list.remove(src_core)
 
-        # TODO: remove!
-        print('moving')
-        if src_core not in allowed:
-            return
+        print('moving src_core={},dst_core={}'.format(src_core, dst_core))
 
         for task in src_tasks:
             task.cpu_affinity([dst_core])
@@ -72,10 +71,6 @@ class Remapper(object):
         src_list.remove(src_core)
         dst_list.remove(dst_core)
 
-        # TODO: remove!
-        print('swapping {}, {}'.format(src_core, dst_core))
-        if src_core not in allowed:
-            return
 
         for task in src_tasks:
             print(task)
