@@ -25,8 +25,6 @@ class Sam(object):
 
             Remapper(self._available_hardware, classified_measurements).remap_processes()
 
-            return
-
     def _classify_measurements(self, measurements):
         classifications = {}
 
