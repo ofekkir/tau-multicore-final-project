@@ -20,30 +20,29 @@ class Remapper(object):
         pids = [int(pid) for pid in subprocess.check_output('ps -eTotid='.split()).splitlines()]
 
         for pid in pids:
-            if pid in blacklist:
-                continue
-
             try:
+                if pid in blacklist:
+                    continue
+
                 process = psutil.Process(pid)
+
+                # Ignore root threads
+                if process.uids().real == 0:
+                    continue
+
+                if process.uids().real not in config.OPTIMIZE_ONLY_PROCESSES_OF_USER:
+                    continue
+                # In the first time sam encounters a process, the process is not pinned yet, thus we use some random cpu as
+                # it's cpu.
+                if len(process.cpu_affinity()) != 1:
+                    affinity = random.choice(process.cpu_affinity())
+                    process.cpu_affinity([affinity])
             except psutil.NoSuchProcess:
                 continue
 
-            # Ignore root threads
-            if process.uids().real == 0:
-                continue
-
-            # TODO: remove!
-                # TODO: remove!
-                if process.uids().real not in config.OPTIMIZE_ONLY_PROCESSES_OF_USER:
-                    continue
-                continue
-            # In the first time sam encounters a process, the process is not pinned yet, thus we use some random cpu as
-            # it's cpu.
-            if len(process.cpu_affinity()) != 1:
-                affinity = random.choice(process.cpu_affinity())
-                process.cpu_affinity([affinity])
-
             processes.append(process)
+
+        # pprint.pprint(processes)
 
         return processes
 
@@ -51,7 +50,7 @@ class Remapper(object):
         src_core = src_list[0]
         dst_core = dst_list[0]
 
-        src_tasks = [p for p in self._processes if p.cpu_affinity()[0] == src_core]
+        src_tasks = [p for p in self._processes if p.is_running() and p.cpu_affinity()[0] == src_core]
 
         src_list.remove(src_core)
 
@@ -65,8 +64,8 @@ class Remapper(object):
         src_core = src_list[0]
         dst_core = dst_list[0]
 
-        src_tasks = [p for p in self._processes if p.cpu_affinity()[0] == src_core]
-        dst_tasks = [p for p in self._processes if p.cpu_affinity()[0] == dst_core]
+        src_tasks = [p for p in self._processes if p.is_running() and p.cpu_affinity()[0] == src_core]
+        dst_tasks = [p for p in self._processes if p.is_running() and p.cpu_affinity()[0] == dst_core]
 
         src_list.remove(src_core)
         dst_list.remove(dst_core)
