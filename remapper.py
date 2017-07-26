@@ -2,6 +2,7 @@ import psutil
 import random
 import os
 import subprocess
+import pprint
 
 import config
 
@@ -57,6 +58,7 @@ class Remapper(object):
         print('moving src_core={},dst_core={}'.format(src_core, dst_core))
 
         for task in src_tasks:
+            print('moving task {}'.format(task))
             task.cpu_affinity([dst_core])
 
 
@@ -70,13 +72,14 @@ class Remapper(object):
         src_list.remove(src_core)
         dst_list.remove(dst_core)
 
+        print('swapping. src={},,dst_core={}'.format(src_core, dst_core))
 
         for task in src_tasks:
-            print(task)
+            print('swapping task {} from src'.format(task))
             task.cpu_affinity([dst_core])
 
         for task in dst_tasks:
-            print(task)
+            print('swapping task {} from dst'.format(task))
             task.cpu_affinity([src_core])
 
 
@@ -94,15 +97,18 @@ class Remapper(object):
                         and self._classifications[socket_j].is_inter:
 
                     while self._classifications[socket_i].is_idle and self._classifications[socket_j].is_inter:
+                        print('idle-inter')
                         self.move(self._classifications[socket_j].is_inter,
                                   self._classifications[socket_i].is_idle)
 
 
                     while self._classifications[socket_i].is_cpu_bound and self._classifications[socket_j].is_inter:
+                        print('cpu-inter')
                         self.swap(self._classifications[socket_j].is_inter,
                                   self._classifications[socket_i].is_cpu_bound)
 
                     while self._classifications[socket_i].is_memory_bound and self._classifications[socket_j].is_inter:
+                        print('memory-inter')
                         self.swap(self._classifications[socket_j].is_inter,
                                   self._classifications[socket_i].is_memory_bound)
 
