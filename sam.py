@@ -150,8 +150,12 @@ class Sam(object):
         for row in parser:
             counter_name = row['event_name']
             cpu_id = int(re.findall('\d+', row['cpu_name'])[0]) # output is in format CPU#, we want only the #.
-            value = row['value'] if row['value'] is not '<not counted>' else 0
-            counters[cpu_id][counter_name] = int(value)
+            value = row['value']
+            # Sometimes, perf output an invalid value. this is meant to handle it.
+            try:
+                counters[cpu_id][counter_name] = int(value)
+            except:
+                counters[cpu_id][counter_name] = 0
 
         return counters
 
