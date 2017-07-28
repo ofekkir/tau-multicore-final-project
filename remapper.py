@@ -92,7 +92,7 @@ class Remapper(object):
                 if socket_i == socket_j:
                     continue
 
-                while len(self._classifications[socket_i].is_inter + self._classifications[socket_i].is_intra) < \
+                if len(self._classifications[socket_i].is_inter + self._classifications[socket_i].is_intra) < \
                         len(self._hw[socket_i]) \
                         and self._classifications[socket_j].is_inter:
 
