@@ -92,6 +92,8 @@ class Remapper(object):
                 if socket_i == socket_j:
                     continue
 
+                print('socket i = {}, socket j = {}'.format(socket_i, socket_j))
+
                 if len(self._classifications[socket_i].is_inter + self._classifications[socket_i].is_intra) < \
                         len(self._hw[socket_i]) \
                         and self._classifications[socket_j].is_inter:
@@ -101,16 +103,23 @@ class Remapper(object):
                         self.move(self._classifications[socket_j].is_inter,
                                   self._classifications[socket_i].is_idle)
 
+                    print('finished idle-inter')
 
                     while self._classifications[socket_i].is_cpu_bound and self._classifications[socket_j].is_inter:
                         print('cpu-inter')
                         self.swap(self._classifications[socket_j].is_inter,
                                   self._classifications[socket_i].is_cpu_bound)
 
+                    print('finished cpu-inter')
+
                     while self._classifications[socket_i].is_memory_bound and self._classifications[socket_j].is_inter:
                         print('memory-inter')
                         self.swap(self._classifications[socket_j].is_inter,
                                   self._classifications[socket_i].is_memory_bound)
+
+                    print('finished memory-inter')
+
+                print('socket j is inter = {}'.format(self._classifications[socket_j].is_inter))
 
     def remap_processes(self):
         self._remap_inter_socket_coherence()
