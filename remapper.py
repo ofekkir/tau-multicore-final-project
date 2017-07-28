@@ -2,8 +2,9 @@ import psutil
 import random
 import os
 import subprocess
+import pprint
 
-allowed = [10,11]
+import config
 
 class Remapper(object):
     def __init__(self, hw, classifications):
@@ -20,28 +21,29 @@ class Remapper(object):
         pids = [int(pid) for pid in subprocess.check_output('ps -eTotid='.split()).splitlines()]
 
         for pid in pids:
-            if pid in blacklist:
-                continue
-
             try:
+                if pid in blacklist:
+                    continue
+
                 process = psutil.Process(pid)
+
+                # Ignore root threads
+                if process.uids().real == 0:
+                    continue
+
+                if process.uids().real not in config.OPTIMIZE_ONLY_PROCESSES_OF_USER:
+                    continue
+                # In the first time sam encounters a process, the process is not pinned yet, thus we use some random cpu as
+                # it's cpu.
+                if len(process.cpu_affinity()) != 1:
+                    affinity = random.choice(process.cpu_affinity())
+                    process.cpu_affinity([affinity])
             except psutil.NoSuchProcess:
                 continue
 
-            # Ignore root threads
-            if process.uids().real == 0:
-                continue
-
-            # TODO: remove!
-            if process.cpu_affinity()[0] not in allowed:
-                continue
-            # In the first time sam encounters a process, the process is not pinned yet, thus we use some random cpu as
-            # it's cpu.
-            if len(process.cpu_affinity()) != 1:
-                affinity = random.choice(process.cpu_affinity())
-                process.cpu_affinity([affinity])
-
             processes.append(process)
+
+        # pprint.pprint(processes)
 
         return processes
 
@@ -49,16 +51,14 @@ class Remapper(object):
         src_core = src_list[0]
         dst_core = dst_list[0]
 
-        src_tasks = [p for p in self._processes if p.cpu_affinity()[0] == src_core]
+        src_tasks = [p for p in self._processes if p.is_running() and p.cpu_affinity()[0] == src_core]
 
         src_list.remove(src_core)
 
-        # TODO: remove!
-        print('moving')
-        if src_core not in allowed:
-            return
+        print('moving src_core={},dst_core={}'.format(src_core, dst_core))
 
         for task in src_tasks:
+            print('moving task {}'.format(task))
             task.cpu_affinity([dst_core])
 
 
@@ -66,23 +66,20 @@ class Remapper(object):
         src_core = src_list[0]
         dst_core = dst_list[0]
 
-        src_tasks = [p for p in self._processes if p.cpu_affinity()[0] == src_core]
-        dst_tasks = [p for p in self._processes if p.cpu_affinity()[0] == dst_core]
+        src_tasks = [p for p in self._processes if p.is_running() and p.cpu_affinity()[0] == src_core]
+        dst_tasks = [p for p in self._processes if p.is_running() and p.cpu_affinity()[0] == dst_core]
 
         src_list.remove(src_core)
         dst_list.remove(dst_core)
 
-        # TODO: remove!
-        print('swapping {}, {}'.format(src_core, dst_core))
-        if src_core not in allowed:
-            return
+        print('swapping. src={},,dst_core={}'.format(src_core, dst_core))
 
         for task in src_tasks:
-            print(task)
+            print('swapping task {} from src'.format(task))
             task.cpu_affinity([dst_core])
 
         for task in dst_tasks:
-            print(task)
+            print('swapping task {} from dst'.format(task))
             task.cpu_affinity([src_core])
 
 
@@ -100,15 +97,18 @@ class Remapper(object):
                         and self._classifications[socket_j].is_inter:
 
                     while self._classifications[socket_i].is_idle and self._classifications[socket_j].is_inter:
+                        print('idle-inter')
                         self.move(self._classifications[socket_j].is_inter,
                                   self._classifications[socket_i].is_idle)
 
 
                     while self._classifications[socket_i].is_cpu_bound and self._classifications[socket_j].is_inter:
+                        print('cpu-inter')
                         self.swap(self._classifications[socket_j].is_inter,
                                   self._classifications[socket_i].is_cpu_bound)
 
                     while self._classifications[socket_i].is_memory_bound and self._classifications[socket_j].is_inter:
+                        print('memory-inter')
                         self.swap(self._classifications[socket_j].is_inter,
                                   self._classifications[socket_i].is_memory_bound)
 

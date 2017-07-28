@@ -25,8 +25,6 @@ class Sam(object):
 
             Remapper(self._available_hardware, classified_measurements).remap_processes()
 
-            return
-
     def _classify_measurements(self, measurements):
         classifications = {}
 
@@ -152,7 +150,12 @@ class Sam(object):
         for row in parser:
             counter_name = row['event_name']
             cpu_id = int(re.findall('\d+', row['cpu_name'])[0]) # output is in format CPU#, we want only the #.
-            counters[cpu_id][counter_name] = int(row['value'])
+            value = row['value']
+            # Sometimes, perf output an invalid value. this is meant to handle it.
+            try:
+                counters[cpu_id][counter_name] = int(value)
+            except:
+                counters[cpu_id][counter_name] = 0
 
         return counters
 
