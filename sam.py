@@ -18,12 +18,16 @@ class Sam(object):
         self._init_available_hardware()
 
     def run(self):
+        i = 0
         while True:
             counters = self._collect_performance_counters()
             measurements = self._compute_measurements(counters)
             classified_measurements = self._classify_measurements(measurements)
 
             Remapper(self._available_hardware, classified_measurements).remap_processes()
+            i += 1
+            if i == config.NUMBER_OF_ITERATIONS:
+                return
 
     def _classify_measurements(self, measurements):
         classifications = {}

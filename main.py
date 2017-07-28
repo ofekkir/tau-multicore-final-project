@@ -7,6 +7,7 @@ import config
 
 def main():
     try:
+        config.NUMBER_OF_ITERATIONS = int(sys.argv[1])
         sam = Sam()
         sam.run()
         return 0
@@ -18,4 +19,7 @@ def main():
 
 
 if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print('Usage me <number of iterations> (-1 means forever)')
+        sys.exit(1)
     sys.exit(main())
