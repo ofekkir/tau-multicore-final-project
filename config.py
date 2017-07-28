@@ -1,6 +1,6 @@
 # -1 means forever
 NUMBER_OF_ITERATIONS = -1
-OPTIMIZE_ONLY_PROCESSES_OF_USER = [1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008] # ofekkirzner
+OPTIMIZE_ONLY_PROCESSES_OF_USER = [1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008]
 
 REMAPPING_INTERVAL_SECONDS = 0.1 # 100 ms
 
@@ -32,8 +32,6 @@ PERF_EVENTS = \
 
         # Memory bandwidth
         'LLC-misses',
-
-        # 'UNHALTED_CYCLES' : 'r003C',
 
         'instructions',
         'cycles'
