@@ -60,7 +60,8 @@ class Sam(object):
                     classifications[socket].is_memory_bound.append(cpu)
                     is_cpu_bound = False
 
-                if measurement.cycles == 0:
+                # if measurement.cycles == 0:
+                if measurement.cycles > config.IDLE_THRESHOLD_PER_TASK:
                     classifications[socket].is_idle.append(cpu)
                     is_cpu_bound = False
 
